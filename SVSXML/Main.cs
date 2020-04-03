@@ -59,41 +59,45 @@ namespace SVSXML
             this.MySheet = (Excel.Worksheet)MyBook.Sheets[1];
 
             int lastRow = MySheet.Cells.SpecialCells(Excel.XlCellType.xlCellTypeLastCell).Row;
-            
+
             //El primer proceso es para crear un list con los fondos de inversión privada
             for (int index = 2; index <= lastRow - 1; index++)
             {
                 //Obtiene la fila
                 System.Array MyValues = (System.Array)MySheet.get_Range("A" + index.ToString(), "R" + index.ToString()).Cells.Value;
 
-                //Obtiene los datos del Excel
-                string fipRut = MyValues.GetValue(1, 4).ToString();
-                string digitoFondo = MyValues.GetValue(1, 5).ToString();
-                string denominacionFondo = MyValues.GetValue(1, 6).ToString();
-                string valorActivos = MyValues.GetValue(1, 7).ToString();
-                string valorPasivos = MyValues.GetValue(1, 8).ToString();
-                string criteriosContables = MyValues.GetValue(1, 9).ToString();
-
-                //Comprueba si existe el FIP para agregarlo a la lista
-                if (!fipList.Any(obj => obj.rutFondo == fipRut))
+                if (MyValues.GetValue(1, 4) != null)
                 {
-                    fipList.Add(
-                        new Fip
-                        {
-                            rutFondo = fipRut,
-                            digitoFondo = digitoFondo,
-                            denominacionFondo = denominacionFondo,
-                            valorActivos = valorActivos,
-                            valorPasivos = valorPasivos,
-                            criteriosContables = criteriosContables
-                        }
-                    );
+
+                    //Obtiene los datos del Excel
+                    string fipRut = MyValues.GetValue(1, 4).ToString();
+                    string digitoFondo = MyValues.GetValue(1, 5).ToString();
+                    string denominacionFondo = MyValues.GetValue(1, 6).ToString();
+                    string valorActivos = MyValues.GetValue(1, 7).ToString();
+                    string valorPasivos = MyValues.GetValue(1, 8).ToString();
+                    string criteriosContables = MyValues.GetValue(1, 9).ToString();
+
+                    //Comprueba si existe el FIP para agregarlo a la lista
+                    if (!fipList.Any(obj => obj.rutFondo == fipRut))
+                    {
+                        fipList.Add(
+                            new Fip
+                            {
+                                rutFondo = fipRut,
+                                digitoFondo = digitoFondo,
+                                denominacionFondo = denominacionFondo,
+                                valorActivos = valorActivos,
+                                valorPasivos = valorPasivos,
+                                criteriosContables = criteriosContables
+                            }
+                        );
+                    }
                 }
 
-                
+
             }
             //El segundo proceso es para agregar aportantes a la lista de fondos de inversión privada
-            foreach(Fip fip in fipList)
+            foreach (Fip fip in fipList)
             {
                 //Agrega los fondos de inversión al XML
                 XmlElement newFipElement = (XmlElement)fondosRootElement.AppendChild(doc.CreateElement("fondoInversionPrivado"));
@@ -109,7 +113,7 @@ namespace SVSXML
                 newFipElement.AppendChild(doc.CreateElement("participes"));
             }
 
-            
+
             //El tercer proceso es para agregar a todos los aportantes a los fondos de inversión privada
             XmlNodeList fipNodeList = doc.SelectNodes("informacionAFIP/fondos/fondoInversionPrivado");
             foreach (XmlNode fipNode in fipNodeList)
@@ -119,37 +123,48 @@ namespace SVSXML
                 {
                     //Obtiene la fila
                     System.Array MyValues = (System.Array)MySheet.get_Range("A" + index.ToString(), "R" + index.ToString()).Cells.Value;
-                    //Si es igual lo agrega
-                    if (fipNode["rutFondo"].InnerText == MyValues.GetValue(1, 4).ToString())
+
+                    // SI es distinto de null, avanzo
+                    if (null != MyValues.GetValue(1, 4))
                     {
-                        //Valores null
-                        string apellidoPaterno;
-                        string apellidoMaterno;
-                        string primerNombre;
-                        string segundoNombre;
+                        //Si es igual lo agrega
+                        if (fipNode["rutFondo"].InnerText == MyValues.GetValue(1, 4).ToString())
+                        {
+                            //Valores null
+                            string apellidoPaterno;
+                            string apellidoMaterno;
+                            string primerNombre;
+                            string segundoNombre;
 
-                        if (MyValues.GetValue(1, 13) == null){ apellidoPaterno = "";}else{ apellidoPaterno = MyValues.GetValue(1, 13).ToString();}
-                        if (MyValues.GetValue(1, 14) == null) { apellidoMaterno = ""; } else {  apellidoMaterno = MyValues.GetValue(1, 14).ToString(); }
-                        if (MyValues.GetValue(1, 15) == null) { primerNombre = ""; } else { primerNombre = MyValues.GetValue(1, 15).ToString(); }
-                        if (MyValues.GetValue(1, 16) == null) { segundoNombre = ""; } else { segundoNombre = MyValues.GetValue(1, 16).ToString(); }
+                            if (MyValues.GetValue(1, 13) == null) { apellidoPaterno = ""; } else { apellidoPaterno = MyValues.GetValue(1, 13).ToString(); }
+                            if (MyValues.GetValue(1, 14) == null) { apellidoMaterno = ""; } else { apellidoMaterno = MyValues.GetValue(1, 14).ToString(); }
+                            if (MyValues.GetValue(1, 15) == null) { primerNombre = ""; } else { primerNombre = MyValues.GetValue(1, 15).ToString(); }
+                            if (MyValues.GetValue(1, 16) == null) { segundoNombre = ""; } else { segundoNombre = MyValues.GetValue(1, 16).ToString(); }
 
-                        XmlElement newFipAportant = (XmlElement)fipNode["participes"].AppendChild(doc.CreateElement("aportante"));
-                        newFipAportant.AppendChild(doc.CreateElement("rutAportante")).InnerText = MyValues.GetValue(1, 10).ToString();
-                        newFipAportant.AppendChild(doc.CreateElement("digitoAportante")).InnerText = MyValues.GetValue(1, 11).ToString();
-                        newFipAportant.AppendChild(doc.CreateElement("extranjero")).InnerText = MyValues.GetValue(1, 12).ToString();
-                        newFipAportant.AppendChild(doc.CreateElement("apellidoPaterno")).InnerText = apellidoPaterno;
-                        newFipAportant.AppendChild(doc.CreateElement("apellidoMaterno")).InnerText = apellidoMaterno;
-                        newFipAportant.AppendChild(doc.CreateElement("primerNombre")).InnerText = primerNombre;
-                        newFipAportant.AppendChild(doc.CreateElement("segundoNombre")).InnerText = segundoNombre;
-                        newFipAportant.AppendChild(doc.CreateElement("montoParticipacion")).InnerText = MyValues.GetValue(1, 17).ToString();
-                        newFipAportant.AppendChild(doc.CreateElement("numeroCuotas")).InnerText = MyValues.GetValue(1, 18).ToString();
+                            XmlElement newFipAportant = (XmlElement)fipNode["participes"].AppendChild(doc.CreateElement("aportante"));
+                            newFipAportant.AppendChild(doc.CreateElement("rutAportante")).InnerText = MyValues.GetValue(1, 10).ToString();
+                            newFipAportant.AppendChild(doc.CreateElement("digitoAportante")).InnerText = MyValues.GetValue(1, 11).ToString();
+                            newFipAportant.AppendChild(doc.CreateElement("extranjero")).InnerText = MyValues.GetValue(1, 12).ToString();
+                            newFipAportant.AppendChild(doc.CreateElement("apellidoPaterno")).InnerText = apellidoPaterno;
+                            newFipAportant.AppendChild(doc.CreateElement("apellidoMaterno")).InnerText = apellidoMaterno;
+                            newFipAportant.AppendChild(doc.CreateElement("primerNombre")).InnerText = primerNombre;
+                            newFipAportant.AppendChild(doc.CreateElement("segundoNombre")).InnerText = segundoNombre;
+                            newFipAportant.AppendChild(doc.CreateElement("montoParticipacion")).InnerText = MyValues.GetValue(1, 17).ToString();
+                            newFipAportant.AppendChild(doc.CreateElement("numeroCuotas")).InnerText = MyValues.GetValue(1, 18).ToString();
+                        }
                     }
                 }
-                
+
             }
 
-            doc.Save(rutaExportText.Text + @"\svsFile.xml");
-            MessageBox.Show("Archivo guardado en: " + rutaExportText.Text + @"\svsFile.xml");
+            string saveFile = rutaExportText.Text + @"\svsFile.xml";
+            if (xmlFileName.Text != "")
+                saveFile = rutaExportText.Text + @"\" + xmlFileName.Text + ".xml";
+
+            doc.Save(saveFile);
+            MessageBox.Show("Archivo guardado en: " + saveFile);
+
+            MyApp.Workbooks.Close();
 
             //ValidateXmlWithXsd(@"C:\svsFile" + dateText.Text + ".xml", Application.StartupPath + @"\\fpapo.xsd");
         }
@@ -188,7 +203,7 @@ namespace SVSXML
                 XmlReader reader = XmlReader.Create(xmlUri, xmlSettings);
 
                 // Parse the file.
-                while (reader.Read());
+                while (reader.Read()) ;
 
                 MessageBox.Show("Archivo Válido");
             }
@@ -198,6 +213,39 @@ namespace SVSXML
             }
         }
 
-        
+        private void dateText_MaskInputRejected(object sender, MaskInputRejectedEventArgs e)
+        {
+
+        }
+
+        private void groupBox1_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label6_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label7_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label8_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
